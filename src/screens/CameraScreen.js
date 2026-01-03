@@ -16,15 +16,12 @@ export default function CameraScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
-          <Ionicons name="arrow-back" size={28} color="#fff" />
+        <TouchableOpacity style={styles.headerIcon}>
+          <Ionicons name="close" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Post Your Moment</Text>
-        <TouchableOpacity>
-          <Image
-            source={{ uri: 'https://via.placeholder.com/40' }}
-            style={styles.profilePic}
-          />
+        <Text style={styles.headerTitle}>Camera</Text>
+        <TouchableOpacity style={styles.headerIcon}>
+          <Ionicons name="flash-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -98,20 +95,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  headerIcon: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#fff',
-  },
-  profilePic: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    borderWidth: 2,
-    borderColor: '#E8E8E8',
   },
   previewContainer: {
     flex: 1,

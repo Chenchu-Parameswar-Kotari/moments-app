@@ -10,11 +10,32 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 
 export default function MessagingScreen() {
   const [message, setMessage] = useState('');
+  const { user, userProfile, logout } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: logout,
+        },
+      ]
+    );
+  };
 
   const messages = [
     {
@@ -49,14 +70,37 @@ export default function MessagingScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton}>
-            <Text style={styles.backArrow}>←</Text>
+            <Ionicons name="arrow-back" size={24} color="#1f1f1f" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Reply Privately</Text>
-          <View style={styles.headerRight} />
+          <Text style={styles.headerTitle}>Profile</Text>
+          <TouchableOpacity style={styles.headerRight} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color="#1f1f1f" />
+          </TouchableOpacity>
         </View>
 
-        {/* Messages */}
+        {/* Profile Section */}
         <ScrollView style={styles.messagesContainer}>
+          <View style={styles.profileSection}>
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {userProfile?.displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+              </Text>
+            </View>
+            <Text style={styles.profileName}>
+              {userProfile?.displayName || user?.displayName || 'User'}
+            </Text>
+            <Text style={styles.profileEmail}>
+              {user?.email || ''}
+            </Text>
+          </View>
+
+          {/* Logout Button */}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color="#fff" />
+            <Text style={styles.logoutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+
+          {/* Messages */}
           {messages.map((msg, index) => (
             <View key={index} style={styles.messageWrapper}>
               {msg.image ? (
@@ -144,34 +188,80 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#f1f1f1',
     backgroundColor: '#FFFFFF',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 24,
-    color: '#333333',
-    fontWeight: '600',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333333',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1f1f1f',
   },
   headerRight: {
-    width: 40,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   messagesContainer: {
     flex: 1,
     padding: 15,
     backgroundColor: '#FFFFFF',
+  },
+  profileSection: {
+    alignItems: 'center',
+    paddingVertical: 30,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f1f1',
+    marginBottom: 20,
+  },
+  profileAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  profileAvatarText: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#333',
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f1f1f',
+    marginBottom: 5,
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: '#888',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#333',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+    gap: 8,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   messageWrapper: {
     marginBottom: 20,

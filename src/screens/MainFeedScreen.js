@@ -22,7 +22,7 @@ const post = {
   user: 'Sarah Pearson',
   time: '2m',
   avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=240&q=80',
-  image: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1200&q=80',
+  image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80',
   caption: 'Saturday sunset ☀️',
   comments: [
     { user: 'Justin', text: 'Omg the beach looks amazing!' },
@@ -77,7 +77,7 @@ export default function MainFeedScreen() {
             <Ionicons name="ellipsis-horizontal" size={18} color="#8a8a8a" />
           </View>
 
-          <Image source={{ uri: post.image }} style={styles.postImage} />
+          <Image source={{ uri: post.image }} style={styles.postImage} resizeMode="cover" />
 
           <View style={styles.actionsRow}>
             <View style={styles.leftActions}>
@@ -212,11 +212,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingRight: 6,
+    gap: 10,
   },
   postAvatar: {
     width: 38,
     height: 38,
     borderRadius: 19,
+    backgroundColor: '#f0f0f0',
   },
   postUserName: {
     fontSize: 15,
@@ -229,7 +231,7 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: '100%',
-    aspectRatio: 4 / 5,
+    aspectRatio: 1,
     backgroundColor: '#f5f5f5',
   },
   actionsRow: {

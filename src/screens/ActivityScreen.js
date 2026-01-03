@@ -46,12 +46,11 @@ export default function ActivityScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLogo}>
-          <Text style={styles.headerEmoji}>😊</Text>
+          <Ionicons name="camera-outline" size={24} color="#1f1f1f" />
           <Text style={styles.headerTitle}>moments</Text>
-          <Text style={styles.sparkle}>✨</Text>
         </View>
         <TouchableOpacity>
-          <Ionicons name="notifications" size={24} color="#333" />
+          <Ionicons name="notifications" size={24} color="#1f1f1f" />
         </TouchableOpacity>
       </View>
 
@@ -151,28 +150,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#f1f1f1',
   },
   headerLogo: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  headerEmoji: {
-    fontSize: 24,
-    marginRight: 6,
-  },
-  sparkle: {
-    fontSize: 14,
-    marginLeft: 4,
+    gap: 8,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1f1f1f',
   },
   content: {
     flex: 1,

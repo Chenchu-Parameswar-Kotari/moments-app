@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import MainFeedScreen from './src/screens/MainFeedScreen';
@@ -70,16 +72,22 @@ function MainTabs() {
   );
 }
 
-export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function AppNavigator() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#000" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
-          <Stack.Screen name="Welcome">
-            {props => <WelcomeScreen {...props} onAuth={() => setIsAuthenticated(true)} />}
-          </Stack.Screen>
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
         ) : (
           <Stack.Screen name="Main" component={MainTabs} />
         )}
@@ -87,3 +95,20 @@ export default function App() {
     </NavigationContainer>
   );
 }
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppNavigator />
+    </AuthProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+});

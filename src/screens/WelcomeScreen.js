@@ -10,22 +10,20 @@ import {
   Platform,
   ScrollView,
   Animated,
-  Dimensions,
-  Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { signUp, signIn } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
-const { width, height } = Dimensions.get('window');
-const heroPortrait = { uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=1200&q=80' };
-
-export default function WelcomeScreen({ onAuth }) {
-  const [mode, setMode] = useState('welcome'); // 'welcome', 'signin', 'signup', 'otp'
-  const [emailOrPhone, setEmailOrPhone] = useState('');
+export default function WelcomeScreen() {
+  const [mode, setMode] = useState('welcome'); // 'welcome', 'signin', 'signup'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const otpRefs = useRef([]);
+  const [loading, setLoading] = useState(false);
   
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -71,136 +69,66 @@ export default function WelcomeScreen({ onAuth }) {
     ).start();
   }, []);
 
-  const handleSendOtp = (forSignUp) => {
-    if (forSignUp && (!emailOrPhone || !name)) {
-      alert('Please enter your name and email/phone');
+  const handleSignUp = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
       return;
     }
-    if (!forSignUp && !emailOrPhone) {
-      alert('Please enter your email or phone number');
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email');
       return;
     }
-    setIsSignUp(forSignUp);
-    setMode('otp');
-    // In real app, send OTP here
-    console.log('Sending OTP to:', emailOrPhone);
-  };
+    if (!password || password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
 
-  const handleOtpChange = (value, index) => {
-    if (value.length > 1) {
-      value = value[value.length - 1];
-    }
+    setLoading(true);
     
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
+    try {
+      const result = await signUp(email.trim(), password, name.trim());
+      
+      if (result.success) {
+        // Auth state will update automatically via AuthContext
+        // Navigation happens automatically
+      } else {
+        Alert.alert('Error', result.error || 'Failed to create account');
+      }
+    } catch (error) {
+      Alert.alert('Error', `An unexpected error occurred: ${error.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleOtpKeyPress = (e, index) => {
-    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
+  const handleSignIn = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email');
+      return;
     }
-  };
+    if (!password) {
+      Alert.alert('Error', 'Please enter your password');
+      return;
+    }
 
-  const handleVerifyOtp = () => {
-    const otpCode = otp.join('');
-    if (otpCode.length === 6) {
-      console.log('Verifying OTP:', otpCode);
-      onAuth();
+    setLoading(true);
+    const result = await signIn(email.trim(), password);
+    setLoading(false);
+
+    if (result.success) {
+      // Auth state will update automatically via AuthContext
+      Alert.alert('Success', 'Signed in successfully!');
     } else {
-      alert('Please enter the complete 6-digit code');
+      Alert.alert('Error', result.error || 'Failed to sign in');
     }
   };
 
   const resetForm = () => {
-    setEmailOrPhone('');
+    setEmail('');
+    setPassword('');
     setName('');
-    setOtp(['', '', '', '', '', '']);
   };
 
-  if (mode === 'otp') {
-    return (
-      <SafeAreaView style={styles.container}>
-        <LinearGradient
-          colors={['#FFFFFF', '#FFFFFF', '#FFFFFF']}
-          style={styles.gradient}
-        >
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardView}
-          >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-              <View style={styles.content}>
-                <TouchableOpacity 
-                  style={styles.backButton}
-                  onPress={() => {
-                    setMode(isSignUp ? 'signup' : 'signin');
-                    setOtp(['', '', '', '', '', '']);
-                  }}
-                >
-                  <Text style={styles.backText}>← Back</Text>
-                </TouchableOpacity>
-
-                <View style={styles.logoContainer}>
-                  <View style={styles.emoji}>
-                    <Text style={styles.emojiText}>😊</Text>
-                    <View style={styles.cameraBadge}>
-                      <Text style={styles.cameraEmoji}>📷</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.title}>moments</Text>
-                </View>
-
-                <Text style={styles.formTitle}>Verify OTP</Text>
-                <Text style={styles.formDescription}>
-                  We've sent a 6-digit code to{'\n'}
-                  <Text style={styles.emailHighlight}>{emailOrPhone}</Text>
-                </Text>
-
-                <View style={styles.formContainer}>
-                  <View style={styles.otpContainer}>
-                    {otp.map((digit, index) => (
-                      <TextInput
-                        key={index}
-                        ref={(ref) => (otpRefs.current[index] = ref)}
-                        style={styles.otpInput}
-                        value={digit}
-                        onChangeText={(value) => handleOtpChange(value, index)}
-                        onKeyPress={(e) => handleOtpKeyPress(e, index)}
-                        keyboardType="number-pad"
-                        maxLength={1}
-                        selectTextOnFocus
-                      />
-                    ))}
-                  </View>
-
-                    <TouchableOpacity 
-                      style={styles.primaryButton}
-                      onPress={handleVerifyOtp}
-                    >
-                      <View style={styles.solidButton}>
-                        <Text style={styles.primaryButtonText}>Verify & Continue</Text>
-                      </View>
-                    </TouchableOpacity>
-
-                  <TouchableOpacity onPress={() => handleSendOtp(isSignUp)}>
-                    <Text style={styles.resendText}>
-                      Didn't receive code? <Text style={styles.switchTextBold}>Resend</Text>
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </LinearGradient>
-      </SafeAreaView>
-    );
-  }
 
   if (mode === 'signin') {
     return (
@@ -213,7 +141,10 @@ export default function WelcomeScreen({ onAuth }) {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.keyboardView}
           >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView 
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.content}>
                 <TouchableOpacity 
                   style={styles.backButton}
@@ -226,38 +157,57 @@ export default function WelcomeScreen({ onAuth }) {
                 </TouchableOpacity>
 
                 <View style={styles.logoContainer}>
-                  <View style={styles.emoji}>
-                    <Text style={styles.emojiText}>😊</Text>
-                    <View style={styles.cameraBadge}>
-                      <Text style={styles.cameraEmoji}>📷</Text>
-                    </View>
+                  <View style={styles.formLogoMark}>
+                    <Ionicons name="camera-outline" size={36} color="#1f1f1f" />
                   </View>
                   <Text style={styles.title}>moments</Text>
                 </View>
 
                 <Text style={styles.formTitle}>Sign In</Text>
                 <Text style={styles.formDescription}>
-                  Welcome back! Enter your email or phone{'\n'}to receive a verification code
+                  Welcome back! Enter your email and password to sign in
                 </Text>
 
                 <View style={styles.formContainer}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Email or Mobile Number"
+                    placeholder="Email"
                     placeholderTextColor="#999"
-                    value={emailOrPhone}
-                    onChangeText={setEmailOrPhone}
+                    value={email}
+                    onChangeText={setEmail}
                     autoCapitalize="none"
                     keyboardType="email-address"
+                    autoComplete="email"
+                    editable={!loading}
+                  />
+
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    placeholderTextColor="#999"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    autoComplete="password"
+                    editable={!loading}
                   />
 
                   <TouchableOpacity 
-                    style={styles.primaryButton}
-                    onPress={() => handleSendOtp(false)}
+                    style={[styles.primaryButton, loading && styles.disabledButton]}
+                    onPress={handleSignIn}
+                    disabled={loading}
+                    activeOpacity={0.7}
                   >
+                    {loading ? (
                       <View style={styles.solidButton}>
-                        <Text style={styles.primaryButtonText}>Send OTP</Text>
+                        <ActivityIndicator color="#FFFFFF" />
                       </View>
+                    ) : (
+                      <View style={styles.solidButton}>
+                        <Text style={styles.primaryButtonText}>Sign In</Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
 
                   <TouchableOpacity onPress={() => {
@@ -280,83 +230,104 @@ export default function WelcomeScreen({ onAuth }) {
   if (mode === 'signup') {
     return (
       <SafeAreaView style={styles.container}>
-        <LinearGradient
-          colors={['#FFFFFF', '#FFFFFF', '#FFFFFF']}
-          style={styles.gradient}
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
         >
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardView}
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled={true}
           >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-              <View style={styles.content}>
+            <View style={styles.content}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={() => {
+                  setMode('welcome');
+                  resetForm();
+                }}
+              >
+                <Text style={styles.backText}>← Back</Text>
+              </TouchableOpacity>
+
+              <View style={styles.logoContainer}>
+                <View style={styles.formLogoMark}>
+                  <Ionicons name="camera-outline" size={36} color="#1f1f1f" />
+                </View>
+                <Text style={styles.title}>moments</Text>
+              </View>
+
+              <Text style={styles.formTitle}>Sign Up</Text>
+              <Text style={styles.formDescription}>
+                Create an account to get started
+              </Text>
+
+              <View style={styles.formContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Full Name"
+                  placeholderTextColor="#999"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  editable={!loading}
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor="#999"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  editable={!loading}
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password (min 6 characters)"
+                  placeholderTextColor="#999"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoComplete="password"
+                  editable={!loading}
+                />
+
                 <TouchableOpacity 
-                  style={styles.backButton}
+                  style={[styles.primaryButton, loading && styles.disabledButton]}
+                  onPress={handleSignUp}
+                  disabled={loading}
+                  activeOpacity={0.7}
+                >
+                  {loading ? (
+                    <View style={styles.solidButton}>
+                      <ActivityIndicator color="#FFFFFF" />
+                    </View>
+                  ) : (
+                    <View style={styles.solidButton}>
+                      <Text style={styles.primaryButtonText}>Sign Up</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity 
                   onPress={() => {
-                    setMode('welcome');
+                    setMode('signin');
                     resetForm();
                   }}
                 >
-                  <Text style={styles.backText}>← Back</Text>
+                  <Text style={styles.switchText}>
+                    Already have an account? <Text style={styles.switchTextBold}>Sign In</Text>
+                  </Text>
                 </TouchableOpacity>
-
-                <View style={styles.logoContainer}>
-                  <View style={styles.emoji}>
-                    <Text style={styles.emojiText}>😊</Text>
-                    <View style={styles.cameraBadge}>
-                      <Text style={styles.cameraEmoji}>📷</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.title}>moments</Text>
-                </View>
-
-                <Text style={styles.formTitle}>Sign Up</Text>
-                <Text style={styles.formDescription}>
-                  Create an account to get started
-                </Text>
-
-                <View style={styles.formContainer}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Full Name"
-                    placeholderTextColor="#999"
-                    value={name}
-                    onChangeText={setName}
-                    autoCapitalize="words"
-                  />
-
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Email or Mobile Number"
-                    placeholderTextColor="#999"
-                    value={emailOrPhone}
-                    onChangeText={setEmailOrPhone}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                  />
-
-                  <TouchableOpacity 
-                    style={styles.primaryButton}
-                    onPress={() => handleSendOtp(true)}
-                  >
-                      <View style={styles.solidButton}>
-                        <Text style={styles.primaryButtonText}>Send OTP</Text>
-                      </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={() => {
-                    setMode('signin');
-                    resetForm();
-                  }}>
-                    <Text style={styles.switchText}>
-                      Already have an account? <Text style={styles.switchTextBold}>Sign In</Text>
-                    </Text>
-                  </TouchableOpacity>
-                </View>
               </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </LinearGradient>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -364,7 +335,6 @@ export default function WelcomeScreen({ onAuth }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.backgroundContainer}>
-        {/* Pure white background */}
         <LinearGradient
           colors={['#FFFFFF', '#FFFFFF', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
@@ -373,13 +343,13 @@ export default function WelcomeScreen({ onAuth }) {
         />
       </View>
       
-      <View style={styles.content}>
-        <Animated.View style={{ opacity: fadeAnim }}>
-          <TouchableOpacity style={styles.skipButton} onPress={onAuth}>
-            <Text style={styles.skipText}>Skip</Text>
-          </TouchableOpacity>
-        </Animated.View>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Skip button - removed for security */}
 
+        {/* Hero Section */}
         <Animated.View 
           style={[
             styles.heroSection,
@@ -388,34 +358,16 @@ export default function WelcomeScreen({ onAuth }) {
               transform: [
                 { translateY: Animated.add(slideAnim, floatAnim) },
                 { scale: scaleAnim }
-              ]
+              ],
             }
           ]}
         >
           <View style={styles.logoMark}>
-            <Ionicons name="camera-outline" size={42} color="#1f1f1f" />
+            <Ionicons name="camera-outline" size={48} color="#1f1f1f" />
           </View>
 
           <Text style={styles.brandName}>moments</Text>
           <Text style={styles.tagline}>Share life, as it happens.</Text>
-
-          <View style={styles.cardStack}>
-            <Image
-              source={heroPortrait}
-              style={[styles.card, styles.cardBack]}
-              resizeMode="cover"
-            />
-            <Image
-              source={heroPortrait}
-              style={[styles.card, styles.cardMid]}
-              resizeMode="cover"
-            />
-            <Image
-              source={heroPortrait}
-              style={[styles.card, styles.cardFront]}
-              resizeMode="cover"
-            />
-          </View>
         </Animated.View>
 
         {/* Buttons section */}
@@ -453,7 +405,7 @@ export default function WelcomeScreen({ onAuth }) {
             <Text style={styles.linkText}>Privacy Policy</Text>
           </Text>
         </Animated.View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -474,16 +426,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 30,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 28,
-    paddingTop: 12,
+  skipContainer: {
+    alignItems: 'flex-end',
   },
   skipButton: {
-    alignSelf: 'flex-end',
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   skipText: {
     color: '#999',
@@ -491,77 +443,37 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   heroSection: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: height * 0.06,
-    marginBottom: height * 0.05,
-    gap: 12,
+    justifyContent: 'center',
+    paddingVertical: 60,
   },
   logoMark: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
+    width: 80,
+    height: 80,
+    borderRadius: 24,
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 20,
   },
   brandName: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '700',
     color: '#1f1f1f',
     letterSpacing: 0.5,
-    marginTop: 2,
   },
   tagline: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#7a7a7a',
     fontWeight: '400',
     textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 24,
-  },
-  cardStack: {
-    width: width * 0.64,
-    height: Math.min(width * 0.75, 360),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  card: {
-    width: '84%',
-    aspectRatio: 4 / 5,
-    borderRadius: 18,
-    backgroundColor: '#f2f2f2',
-    position: 'absolute',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 8,
-    borderWidth: 6,
-    borderColor: '#fff',
-  },
-  cardBack: {
-    top: 26,
-    left: -6,
-    transform: [{ rotate: '-9deg' }, { scale: 0.94 }],
-  },
-  cardMid: {
-    top: 14,
-    right: -4,
-    transform: [{ rotate: '6deg' }, { scale: 0.97 }],
-  },
-  cardFront: {
-    top: 0,
-    transform: [{ rotate: '-2deg' }],
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    marginTop: 8,
   },
   buttonContainer: {
-    flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: 30,
+    paddingTop: 30,
+    paddingBottom: 20,
   },
   primaryButton: {
     marginBottom: 12,
@@ -572,6 +484,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 10,
     elevation: 6,
+    zIndex: 10,
   },
   solidButton: {
     backgroundColor: '#000',
@@ -607,7 +520,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    paddingVertical: 24,
+    paddingTop: 16,
+    paddingBottom: 20,
     alignItems: 'center',
   },
   footerText: {
@@ -634,24 +548,13 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginBottom: 20,
   },
-  emoji: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
+  formLogoMark: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  emojiText: {
-    fontSize: 40,
-  },
-  cameraBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    overflow: 'hidden',
   },
   title: {
     fontSize: 32,
@@ -678,8 +581,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   formContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    width: '100%',
+    marginTop: 20,
   },
   input: {
     backgroundColor: '#fff',
@@ -691,29 +594,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#E0E0E0',
   },
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 30,
-    paddingHorizontal: 10,
+  disabledButton: {
+    opacity: 0.6,
   },
-  otpInput: {
-    width: 48,
-    height: 58,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-    textAlign: 'center',
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  resendText: {
-    color: '#888',
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 20,
+  pressedButton: {
+    opacity: 0.8,
   },
   switchText: {
     color: '#888',
