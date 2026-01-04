@@ -1,9 +1,10 @@
-import { 
+import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -13,14 +14,14 @@ export const signUp = async (email, password, name) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    
+
     // Update display name
     try {
       await updateProfile(user, { displayName: name });
     } catch (profileError) {
       // Continue even if profile update fails
     }
-    
+
     // Create user document in Firestore (don't fail if this fails)
     try {
       await setDoc(doc(db, 'users', user.uid), {
@@ -36,11 +37,11 @@ export const signUp = async (email, password, name) => {
     } catch (firestoreError) {
       // Continue even if Firestore fails - user is still created
     }
-    
+
     return { success: true, user };
   } catch (error) {
     let errorMessage = 'Failed to create account. Please try again.';
-    
+
     if (error.code === 'auth/email-already-in-use') {
       errorMessage = 'This email is already registered. Please sign in instead.';
     } else if (error.code === 'auth/invalid-email') {
@@ -54,7 +55,7 @@ export const signUp = async (email, password, name) => {
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
+
     return { success: false, error: errorMessage };
   }
 };
@@ -66,7 +67,7 @@ export const signIn = async (email, password) => {
     return { success: true, user: userCredential.user };
   } catch (error) {
     let errorMessage = 'Failed to sign in. Please try again.';
-    
+
     if (error.code === 'auth/user-not-found') {
       errorMessage = 'No account found with this email. Please sign up first.';
     } else if (error.code === 'auth/wrong-password') {
@@ -80,7 +81,7 @@ export const signIn = async (email, password) => {
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
+
     return { success: false, error: errorMessage };
   }
 };
@@ -92,6 +93,26 @@ export const logOut = async () => {
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
+  }
+};
+
+// Send password reset email
+export const resetPassword = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { success: true };
+  } catch (error) {
+    let errorMessage = 'Failed to send reset email. Please try again.';
+
+    if (error.code === 'auth/invalid-email') {
+      errorMessage = 'Please enter a valid email address.';
+    } else if (error.code === 'auth/user-not-found') {
+      errorMessage = 'No account found with this email.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    return { success: false, error: errorMessage };
   }
 };
 
@@ -110,7 +131,7 @@ export const getUserProfile = async (uid) => {
   try {
     const docRef = doc(db, 'users', uid);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       return { success: true, data: docSnap.data() };
     } else {

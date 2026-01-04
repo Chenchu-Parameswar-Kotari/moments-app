@@ -15,16 +15,34 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { signUp, signIn } from '../services/authService';
+import { signUp, signIn, resetPassword } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
+
+// Helper for cross-platform alerts
+const showAlert = (title, message) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}: ${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
 
 export default function WelcomeScreen() {
   const [mode, setMode] = useState('welcome'); // 'welcome', 'signin', 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
+  // Validate password complexity
+  const validatePassword = (pwd) => {
+    if (pwd.length < 6) return 'Password must be at least 6 characters';
+    if (!/[0-9]/.test(pwd)) return 'Password must contain at least one number';
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) return 'Password must contain at least one symbol';
+    return null;
+  };
+
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -70,44 +88,49 @@ export default function WelcomeScreen() {
   }, []);
 
   const handleSignUp = async () => {
+    setError('');
+
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter your name');
+      setError('Please enter your name');
       return;
     }
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
+      setError('Please enter your email');
       return;
     }
-    if (!password || password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
     setLoading(true);
-    
+
     try {
       const result = await signUp(email.trim(), password, name.trim());
-      
+
       if (result.success) {
         // Auth state will update automatically via AuthContext
-        // Navigation happens automatically
       } else {
-        Alert.alert('Error', result.error || 'Failed to create account');
+        setError(result.error || 'Failed to create account');
       }
     } catch (error) {
-      Alert.alert('Error', `An unexpected error occurred: ${error.message || 'Unknown error'}`);
+      setError(`An unexpected error occurred: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSignIn = async () => {
+    setError('');
+
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
+      setError('Please enter your email');
       return;
     }
     if (!password) {
-      Alert.alert('Error', 'Please enter your password');
+      setError('Please enter your password');
       return;
     }
 
@@ -117,18 +140,116 @@ export default function WelcomeScreen() {
 
     if (result.success) {
       // Auth state will update automatically via AuthContext
-      Alert.alert('Success', 'Signed in successfully!');
     } else {
-      Alert.alert('Error', result.error || 'Failed to sign in');
+      setError(result.error || 'Failed to sign in');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setError('');
+
+    if (!email.trim()) {
+      setError('Please enter your email to reset password');
+      return;
+    }
+
+    setLoading(true);
+    const result = await resetPassword(email.trim());
+    setLoading(false);
+
+    if (result.success) {
+      showAlert('Success', 'Password reset email sent! Check your inbox.');
+      setMode('signin');
+    } else {
+      setError(result.error || 'Failed to send reset email');
     }
   };
 
   const resetForm = () => {
+    setError('');
     setEmail('');
     setPassword('');
     setName('');
   };
 
+
+  if (mode === 'forgotPassword') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+          colors={['#FFFFFF', '#FFFFFF', '#FFFFFF']}
+          style={styles.gradient}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardView}
+          >
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.content}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => {
+                    setMode('signin');
+                    resetForm();
+                  }}
+                >
+                  <Text style={styles.backText}>← Back</Text>
+                </TouchableOpacity>
+
+                <View style={styles.logoContainer}>
+                  <View style={styles.formLogoMark}>
+                    <Ionicons name="key-outline" size={36} color="#1f1f1f" />
+                  </View>
+                  <Text style={styles.title}>Recovery</Text>
+                </View>
+
+                <Text style={styles.formTitle}>Forgot Password?</Text>
+                <Text style={styles.formDescription}>
+                  Enter your email address to receive a password reset link
+                </Text>
+
+                <View style={styles.formContainer}>
+                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    placeholderTextColor="#999"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    autoComplete="email"
+                    editable={!loading}
+                  />
+
+                  <TouchableOpacity
+                    style={[styles.primaryButton, loading && styles.disabledButton]}
+                    onPress={handleResetPassword}
+                    disabled={loading}
+                    activeOpacity={0.7}
+                  >
+                    {loading ? (
+                      <View style={styles.solidButton}>
+                        <ActivityIndicator color="#FFFFFF" />
+                      </View>
+                    ) : (
+                      <View style={styles.solidButton}>
+                        <Text style={styles.primaryButtonText}>Send Reset Link</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
 
   if (mode === 'signin') {
     return (
@@ -137,16 +258,16 @@ export default function WelcomeScreen() {
           colors={['#FFFFFF', '#FFFFFF', '#FFFFFF']}
           style={styles.gradient}
         >
-          <KeyboardAvoidingView 
+          <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.keyboardView}
           >
-            <ScrollView 
+            <ScrollView
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
             >
               <View style={styles.content}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.backButton}
                   onPress={() => {
                     setMode('welcome');
@@ -169,6 +290,8 @@ export default function WelcomeScreen() {
                 </Text>
 
                 <View style={styles.formContainer}>
+                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
                   <TextInput
                     style={styles.input}
                     placeholder="Email"
@@ -193,7 +316,7 @@ export default function WelcomeScreen() {
                     editable={!loading}
                   />
 
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.primaryButton, loading && styles.disabledButton]}
                     onPress={handleSignIn}
                     disabled={loading}
@@ -208,6 +331,18 @@ export default function WelcomeScreen() {
                         <Text style={styles.primaryButtonText}>Sign In</Text>
                       </View>
                     )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      setMode('forgotPassword');
+                      resetForm();
+                    }}
+                    style={{ alignSelf: 'center', marginVertical: 15 }}
+                  >
+                    <Text style={{ color: '#5B9BD5', fontWeight: '600', fontSize: 14 }}>
+                      Forgot Password?
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity onPress={() => {
@@ -230,17 +365,17 @@ export default function WelcomeScreen() {
   if (mode === 'signup') {
     return (
       <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             nestedScrollEnabled={true}
           >
             <View style={styles.content}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => {
                   setMode('welcome');
@@ -263,6 +398,8 @@ export default function WelcomeScreen() {
               </Text>
 
               <View style={styles.formContainer}>
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
                 <TextInput
                   style={styles.input}
                   placeholder="Full Name"
@@ -297,7 +434,7 @@ export default function WelcomeScreen() {
                   editable={!loading}
                 />
 
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.primaryButton, loading && styles.disabledButton]}
                   onPress={handleSignUp}
                   disabled={loading}
@@ -314,7 +451,7 @@ export default function WelcomeScreen() {
                   )}
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => {
                     setMode('signin');
                     resetForm();
@@ -342,15 +479,15 @@ export default function WelcomeScreen() {
           style={styles.gradient}
         />
       </View>
-      
-      <ScrollView 
+
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Skip button - removed for security */}
 
         {/* Hero Section */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.heroSection,
             {
@@ -371,7 +508,7 @@ export default function WelcomeScreen() {
         </Animated.View>
 
         {/* Buttons section */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.buttonContainer,
             {
@@ -380,7 +517,7 @@ export default function WelcomeScreen() {
             }
           ]}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => setMode('signup')}
             activeOpacity={0.9}
@@ -390,7 +527,7 @@ export default function WelcomeScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setMode('signin')}
             activeOpacity={0.9}
           >
@@ -609,5 +746,12 @@ const styles = StyleSheet.create({
   switchTextBold: {
     color: '#333333',
     fontWeight: '600',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 14,
+    marginBottom: 15,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

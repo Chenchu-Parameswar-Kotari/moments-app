@@ -10,7 +10,7 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import MainFeedScreen from './src/screens/MainFeedScreen';
 import CameraScreen from './src/screens/CameraScreen';
 import ActivityScreen from './src/screens/ActivityScreen';
-import MessagingScreen from './src/screens/MessagingScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -36,6 +36,8 @@ function MainTabs() {
         name="Feed"
         component={MainFeedScreen}
         options={{
+          title: 'moments app',
+          tabBarLabel: 'Feed',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -45,6 +47,8 @@ function MainTabs() {
         name="Camera"
         component={CameraScreen}
         options={{
+          title: 'moments app',
+          tabBarLabel: 'Camera',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="camera" size={size} color={color} />
           ),
@@ -54,6 +58,8 @@ function MainTabs() {
         name="Activity"
         component={ActivityScreen}
         options={{
+          title: 'moments app',
+          tabBarLabel: 'Activity',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="notifications" size={size} color={color} />
           ),
@@ -61,8 +67,10 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Profile"
-        component={MessagingScreen}
+        component={ProfileScreen}
         options={{
+          title: 'moments app',
+          tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

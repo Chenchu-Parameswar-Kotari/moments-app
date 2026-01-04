@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChange(async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        
+
         // Fetch user profile from Firestore
         const profileResult = await getUserProfile(firebaseUser.uid);
         if (profileResult.success) {
@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const handleLogout = async () => {
+    console.log('AuthContext: handleLogout called');
     try {
       const result = await logOut();
       if (result.success) {
