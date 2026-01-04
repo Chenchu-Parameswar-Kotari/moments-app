@@ -142,3 +142,39 @@ export const getUserProfile = async (uid) => {
   }
 };
 
+// Update user profile
+export const updateUserProfile = async (uid, data) => {
+  console.log('[DEBUG] Starting updateUserProfile for:', uid);
+  try {
+    const user = auth.currentUser;
+
+    // Update Firebase Auth profile
+    if (user && (data.displayName)) {
+      console.log('[DEBUG] Updating Auth displayName...');
+      try {
+        await updateProfile(user, {
+          displayName: data.displayName,
+        });
+        console.log('[DEBUG] Auth displayName updated.');
+      } catch (authError) {
+        console.error('[DEBUG] Auth update failed (continuing to Firestore):', authError);
+      }
+    }
+
+    // Update Firestore document
+    try {
+      console.log('[DEBUG] Attempting to write to Firestore users collection...');
+      const userRef = doc(db, 'users', uid);
+      await setDoc(userRef, data, { merge: true });
+      console.log('[DEBUG] Firestore write successful.');
+    } catch (firestoreError) {
+      console.error('[DEBUG] Firestore write FAILED:', firestoreError);
+      throw firestoreError; // Re-throw to be caught by outer catch
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[DEBUG] updateUserProfile FAILED:', error);
+    return { success: false, error: error.message };
+  }
+};

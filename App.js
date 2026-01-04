@@ -11,9 +11,24 @@ import MainFeedScreen from './src/screens/MainFeedScreen';
 import CameraScreen from './src/screens/CameraScreen';
 import ActivityScreen from './src/screens/ActivityScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
+import PrivacyScreen from './src/screens/PrivacyScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+const ProfileStack = createStackNavigator();
+
+function ProfileStackNavigator() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
+      <ProfileStack.Screen name="Notifications" component={NotificationsScreen} />
+      <ProfileStack.Screen name="Privacy" component={PrivacyScreen} />
+    </ProfileStack.Navigator>
+  );
+}
 
 function MainTabs() {
   return (
@@ -67,7 +82,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileStackNavigator}
         options={{
           title: 'moments app',
           tabBarLabel: 'Profile',

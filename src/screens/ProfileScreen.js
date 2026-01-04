@@ -21,7 +21,7 @@ const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 3;
 const IMAGE_SIZE = width / COLUMN_COUNT;
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
     const { user, userProfile, logout } = useAuth();
 
     const [settingsVisible, setSettingsVisible] = React.useState(false);
@@ -36,12 +36,12 @@ export default function ProfileScreen() {
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 200,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.timing(slideAnim, {
                 toValue: 0,
                 duration: 300,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
         ]).start();
     };
@@ -51,12 +51,12 @@ export default function ProfileScreen() {
             Animated.timing(fadeAnim, {
                 toValue: 0,
                 duration: 200,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
             Animated.timing(slideAnim, {
                 toValue: 300,
                 duration: 200,
-                useNativeDriver: true,
+                useNativeDriver: Platform.OS !== 'web',
             }),
         ]).start(() => setSettingsVisible(false));
     };
@@ -64,10 +64,12 @@ export default function ProfileScreen() {
     const handleOptionPress = (option) => {
         closeSettings();
         setTimeout(() => {
-            if (Platform.OS === 'web') {
-                window.alert(`${option} functionality coming soon!`);
-            } else {
-                Alert.alert('Coming Soon', `${option} functionality will be implemented in the next update.`);
+            if (option === 'Edit Profile') {
+                navigation.navigate('EditProfile');
+            } else if (option === 'Notifications') {
+                navigation.navigate('Notifications');
+            } else if (option === 'Privacy & Security') {
+                navigation.navigate('Privacy');
             }
         }, 300);
     };

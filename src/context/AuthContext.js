@@ -45,12 +45,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshUserProfile = async () => {
+    if (user) {
+      const profileResult = await getUserProfile(user.uid);
+      if (profileResult.success) {
+        setUserProfile(profileResult.data);
+      }
+    }
+  };
+
   const value = {
     user,
     userProfile,
     loading,
     isAuthenticated: !!user,
     logout: handleLogout,
+    refreshUserProfile,
   };
 
   return (
